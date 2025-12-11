@@ -425,7 +425,7 @@
             }
 
             topKeywordsChart = new Chart(ctx, {
-                type: 'horizontalBar',
+                type: 'bar',  // Chart.js 4.x에서는 'bar' 사용
                 data: {
                     labels: labels,
                     datasets: [{
@@ -437,7 +437,7 @@
                     }]
                 },
                 options: {
-                    indexAxis: 'y',
+                    indexAxis: 'y',  // 가로 막대 그래프로 설정
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
