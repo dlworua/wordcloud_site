@@ -380,6 +380,7 @@
         // 카테고리별 트렌드 로드
         async function loadCategoryTrends() {
             const timeframe = document.getElementById('timeframe').value;
+            const category = document.getElementById('category').value;
             const loading = document.getElementById('categoryLoading');
             const empty = document.getElementById('categoryEmpty');
             const container = document.getElementById('categoryChartContainer');
@@ -389,14 +390,15 @@
             container.style.display = 'none';
 
             try {
-                const response = await fetch(`/api/trends/categories?timeframe=${timeframe}`);
+                const url = `/api/trends/categories?timeframe=${timeframe}${category ? '&category=' + encodeURIComponent(category) : ''}`;
+                const response = await fetch(url);
                 const data = await response.json();
 
                 loading.classList.remove('active');
 
                 if (response.ok) {
                     container.style.display = 'block';
-                    updateCategoryChart(data);
+                    updateCategoryChart(data, category);
                 } else {
                     empty.style.display = 'block';
                     empty.innerHTML = `<div class="empty-state-icon">❌</div><div class="empty-state-text" style="color: red;">오류: ${data.error}</div>`;
@@ -408,9 +410,10 @@
             }
         }
 
-        // 인기 키워드 로드
+        // 인기 키워드 로드 (워드클라우드 데이터 재활용)
         async function loadTopKeywords() {
             const timeframe = document.getElementById('timeframe').value;
+            const category = document.getElementById('category').value;
             const loading = document.getElementById('topLoading');
             const empty = document.getElementById('topEmpty');
             const container = document.getElementById('topChartContainer');
@@ -420,7 +423,9 @@
             container.style.display = 'none';
 
             try {
-                const response = await fetch(`/api/trends/top-keywords?n=20&timeframe=${timeframe}`);
+                // 워드클라우드와 동일한 키워드 가중치 사용, 카테고리 필터링 포함
+                const url = `/api/trends/top-keywords?n=20&timeframe=${timeframe}${category ? '&category=' + encodeURIComponent(category) : ''}`;
+                const response = await fetch(url);
                 const data = await response.json();
 
                 loading.classList.remove('active');
@@ -440,7 +445,7 @@
         }
 
         // 카테고리 차트 업데이트
-        function updateCategoryChart(data) {
+        function updateCategoryChart(data, selectedCategory) {
             const ctx = document.getElementById('categoryChart');
             const labels = Object.keys(data);
             const values = Object.values(data);
@@ -449,12 +454,16 @@
                 categoryChart.destroy();
             }
 
+            // 특정 카테고리 선택 시 가로 막대 그래프
+            const chartType = selectedCategory ? 'bar' : 'bar';
+            const indexAxis = selectedCategory ? 'y' : 'x';
+
             categoryChart = new Chart(ctx, {
-                type: 'bar',
+                type: chartType,
                 data: {
                     labels: labels,
                     datasets: [{
-                        label: '평균 검색량',
+                        label: selectedCategory ? '키워드별 검색량' : '카테고리별 평균 검색량',
                         data: values,
                         backgroundColor: 'rgba(102, 126, 234, 0.8)',
                         borderColor: 'rgba(102, 126, 234, 1)',
@@ -463,6 +472,7 @@
                     }]
                 },
                 options: {
+                    indexAxis: indexAxis,
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
@@ -478,8 +488,10 @@
                             }
                         },
                         x: {
+                            beginAtZero: true,
                             grid: {
-                                display: false
+                                display: indexAxis === 'y',
+                                color: 'rgba(0, 0, 0, 0.05)'
                             }
                         }
                     }

@@ -92,14 +92,41 @@ def get_category_trends():
 
     Query 파라미터:
         timeframe (str): 분석 기간 (기본값: 'today 3-m')
+        category (str): 특정 카테고리 선택 시 하위 키워드 분석
 
     Returns:
-        JSON: {카테고리: 평균검색량} 형태
+        JSON: {키워드: 평균검색량} 형태
     """
     try:
         timeframe = request.args.get('timeframe', 'today 3-m')
-        category_scores = trends_analyzer.analyze_by_category(timeframe)
-        return jsonify(category_scores)
+        category = request.args.get('category', None)
+
+        # 특정 카테고리 선택 시 하위 키워드 분석
+        if category and category in PRODUCT_KEYWORDS:
+            keywords = PRODUCT_KEYWORDS[category]
+            keyword_scores = {}
+
+            # 키워드를 5개씩 묶어서 처리
+            for i in range(0, len(keywords), 5):
+                batch = keywords[i:i+5]
+                df = trends_analyzer.fetch_trends_data(batch, timeframe=timeframe)
+
+                if not df.empty:
+                    for keyword in batch:
+                        if keyword in df.columns:
+                            keyword_scores[keyword] = max(df[keyword].mean(), 0)
+                        else:
+                            keyword_scores[keyword] = 0
+                else:
+                    for keyword in batch:
+                        keyword_scores[keyword] = 0
+
+            return jsonify(keyword_scores)
+        else:
+            # 전체 보험: 카테고리별 비교
+            category_scores = trends_analyzer.analyze_by_category(timeframe)
+            return jsonify(category_scores)
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -218,6 +245,7 @@ def get_top_keywords():
     Query 파라미터:
         n (int): 가져올 키워드 개수 (기본값: 20)
         timeframe (str): 분석 기간 (기본값: 'today 3-m')
+        category (str): 특정 카테고리로 필터링 (선택사항)
 
     Returns:
         JSON: [[키워드, 점수], ...] 형태의 리스트
@@ -225,10 +253,20 @@ def get_top_keywords():
     try:
         n = int(request.args.get('n', 20))
         timeframe = request.args.get('timeframe', 'today 3-m')
+        category = request.args.get('category', None)
 
-        top_keywords = trends_analyzer.get_top_keywords(n, timeframe)
+        # 전체 키워드 가중치 가져오기
+        keyword_weights = trends_analyzer.get_keyword_weights(timeframe)
 
-        return jsonify(top_keywords)
+        # 특정 카테고리로 필터링
+        if category and category in PRODUCT_KEYWORDS:
+            category_keywords = PRODUCT_KEYWORDS[category]
+            keyword_weights = {k: v for k, v in keyword_weights.items() if k in category_keywords}
+
+        # 점수 기준으로 정렬하여 상위 N개 추출
+        sorted_keywords = sorted(keyword_weights.items(), key=lambda x: x[1], reverse=True)[:n]
+
+        return jsonify(sorted_keywords)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
