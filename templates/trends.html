@@ -184,6 +184,16 @@
             100% { transform: rotate(360deg); }
         }
 
+        /* 알림 메시지 */
+        .info-message {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            color: #1976d2;
+        }
+
         /* 차트 컨테이너 */
         .chart-container {
             position: relative;
@@ -209,6 +219,10 @@
         <a href="/">텍스트 워드클라우드</a>
         <a href="/trends">트렌드 분석</a>
     </nav>
+
+    <div class="info-message">
+        💡 <strong>팁:</strong> 첫 번째 로딩은 시간이 걸릴 수 있습니다. 이후 1시간 동안은 캐시된 데이터를 사용하여 빠르게 표시됩니다.
+    </div>
 
     <div class="controls">
         <div class="control-group">
@@ -245,6 +259,9 @@
         <div class="loading" id="wordcloudLoading">
             <div class="spinner"></div>
             <p>워드클라우드를 생성하고 있습니다...</p>
+            <p style="font-size: 0.9em; color: #666; margin-top: 10px;">
+                Google Trends에서 데이터를 가져오는 중입니다. 잠시만 기다려주세요.
+            </p>
         </div>
         <div class="wordcloud-container" id="wordcloudResult"></div>
     </div>

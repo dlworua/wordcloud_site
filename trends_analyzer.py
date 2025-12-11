@@ -8,6 +8,9 @@ import pandas as pd
 from datetime import datetime, timedelta
 import time
 from keywords_config import PRODUCT_KEYWORDS, PRODUCT_CATEGORIES
+from functools import lru_cache
+import hashlib
+import json
 
 class TrendsAnalyzer:
     """Google Trends 데이터 분석 클래스"""
@@ -15,10 +18,30 @@ class TrendsAnalyzer:
     def __init__(self):
         """pytrends 객체 초기화"""
         self.pytrends = TrendReq(hl='ko', tz=540)  # 한국 시간대 (UTC+9)
+        self._cache = {}  # 간단한 캐시 시스템
+        self._cache_duration = 3600  # 캐시 유지 시간 (1시간)
+
+    def _get_cache_key(self, *args):
+        """캐시 키 생성"""
+        key_str = json.dumps(args, sort_keys=True)
+        return hashlib.md5(key_str.encode()).hexdigest()
+
+    def _get_from_cache(self, cache_key):
+        """캐시에서 데이터 가져오기"""
+        if cache_key in self._cache:
+            data, timestamp = self._cache[cache_key]
+            # 캐시가 아직 유효한지 확인
+            if time.time() - timestamp < self._cache_duration:
+                return data
+        return None
+
+    def _save_to_cache(self, cache_key, data):
+        """캐시에 데이터 저장"""
+        self._cache[cache_key] = (data, time.time())
 
     def fetch_trends_data(self, keywords, timeframe='today 3-m', geo='KR'):
         """
-        Google Trends에서 키워드 검색 트렌드 데이터 수집
+        Google Trends에서 키워드 검색 트렌드 데이터 수집 (캐싱 적용)
 
         Args:
             keywords (list): 검색할 키워드 리스트 (최대 5개)
@@ -35,9 +58,15 @@ class TrendsAnalyzer:
         Returns:
             pandas.DataFrame: 시간별 검색 트렌드 데이터
         """
+        # 캐시 확인
+        cache_key = self._get_cache_key('fetch', sorted(keywords), timeframe, geo)
+        cached_data = self._get_from_cache(cache_key)
+        if cached_data is not None:
+            return cached_data
+
         try:
             # Google Trends API 호출 제한을 피하기 위한 딜레이
-            time.sleep(1)
+            time.sleep(0.5)  # 1초에서 0.5초로 단축
 
             # 키워드 빌드 (최대 5개까지만 가능)
             keywords = keywords[:5]
@@ -56,6 +85,9 @@ class TrendsAnalyzer:
                 # 'isPartial' 컬럼 제거 (부분 데이터 플래그)
                 if 'isPartial' in interest_over_time.columns:
                     interest_over_time = interest_over_time.drop(columns=['isPartial'])
+
+            # 캐시에 저장
+            self._save_to_cache(cache_key, interest_over_time)
 
             return interest_over_time
 
@@ -178,7 +210,7 @@ class TrendsAnalyzer:
 
     def get_keyword_weights(self, timeframe='today 3-m'):
         """
-        모든 키워드의 검색량 기반 가중치 계산
+        모든 키워드의 검색량 기반 가중치 계산 (캐싱 및 최적화 적용)
         워드클라우드 생성에 사용
 
         Args:
@@ -187,26 +219,30 @@ class TrendsAnalyzer:
         Returns:
             dict: {키워드: 가중치} 형태의 딕셔너리
         """
+        # 캐시 확인
+        cache_key = self._get_cache_key('weights', timeframe)
+        cached_data = self._get_from_cache(cache_key)
+        if cached_data is not None:
+            return cached_data
+
         keyword_weights = {}
 
-        # 카테고리별로 처리
-        for category, keywords in PRODUCT_KEYWORDS.items():
-            # 5개씩 묶어서 처리 (API 제한)
-            for i in range(0, len(keywords), 5):
-                batch = keywords[i:i+5]
-                df = self.fetch_trends_data(batch, timeframe=timeframe)
+        # 카테고리별로 처리 - 카테고리 이름만 먼저 조회 (빠른 방법)
+        print(f"카테고리 검색량 조회 중...")
+        for category in PRODUCT_CATEGORIES:
+            df = self.fetch_trends_data([category], timeframe=timeframe)
+            if not df.empty and category in df.columns:
+                # 카테고리 평균 검색량을 해당 카테고리의 모든 키워드에 적용
+                category_weight = max(df[category].mean(), 1)
+                for keyword in PRODUCT_KEYWORDS[category]:
+                    keyword_weights[keyword] = category_weight
+            else:
+                # 데이터가 없으면 기본값
+                for keyword in PRODUCT_KEYWORDS[category]:
+                    keyword_weights[keyword] = 1
 
-                if not df.empty:
-                    for keyword in batch:
-                        if keyword in df.columns:
-                            # 평균 검색량을 가중치로 사용
-                            keyword_weights[keyword] = max(df[keyword].mean(), 1)
-                        else:
-                            keyword_weights[keyword] = 1
-                else:
-                    # 데이터가 없으면 기본값 1
-                    for keyword in batch:
-                        keyword_weights[keyword] = 1
+        # 캐시에 저장
+        self._save_to_cache(cache_key, keyword_weights)
 
         return keyword_weights
 
