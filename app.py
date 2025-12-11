@@ -6,6 +6,8 @@ Google Trends 데이터 기반 보험 키워드 분석 기능 포함
 
 from flask import Flask, render_template, request, send_file, jsonify
 from wordcloud import WordCloud
+import matplotlib
+matplotlib.use('Agg')  # GUI 없는 백엔드 사용 (macOS 스레드 문제 해결)
 import matplotlib.pyplot as plt
 import io
 import os
