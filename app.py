@@ -76,5 +76,5 @@ def generate_wordcloud():
         return f"오류가 발생했습니다: {str(e)}", 500
 
 if __name__ == '__main__':
-    # 개발 서버 실행
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    # 개발 서버 실행 (포트 5001 사용 - macOS AirPlay가 5000 사용)
+    app.run(debug=True, host='0.0.0.0', port=5001)
