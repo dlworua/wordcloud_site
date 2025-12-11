@@ -246,6 +246,54 @@ class TrendsAnalyzer:
 
         return keyword_weights
 
+    def get_detailed_keyword_weights(self, timeframe='today 3-m', category=None):
+        """
+        개별 키워드의 실제 검색량 기반 가중치 계산 (TOP 키워드 분석용)
+
+        Args:
+            timeframe (str): 분석 기간
+            category (str): 특정 카테고리만 분석 (None이면 전체)
+
+        Returns:
+            dict: {키워드: 가중치} 형태의 딕셔너리
+        """
+        # 캐시 확인
+        cache_key = self._get_cache_key('detailed_weights', timeframe, category)
+        cached_data = self._get_from_cache(cache_key)
+        if cached_data is not None:
+            return cached_data
+
+        keyword_weights = {}
+
+        # 분석할 카테고리 결정
+        categories_to_analyze = [category] if category and category in PRODUCT_KEYWORDS else PRODUCT_CATEGORIES
+
+        print(f"상세 키워드 검색량 조회 중... (카테고리: {len(categories_to_analyze)}개)")
+
+        for cat in categories_to_analyze:
+            keywords = PRODUCT_KEYWORDS[cat]
+
+            # 키워드를 5개씩 묶어서 처리
+            for i in range(0, len(keywords), 5):
+                batch = keywords[i:i+5]
+                df = self.fetch_trends_data(batch, timeframe=timeframe)
+
+                if not df.empty:
+                    for keyword in batch:
+                        if keyword in df.columns:
+                            # 실제 검색량 평균 사용
+                            keyword_weights[keyword] = max(df[keyword].mean(), 0)
+                        else:
+                            keyword_weights[keyword] = 0
+                else:
+                    for keyword in batch:
+                        keyword_weights[keyword] = 0
+
+        # 캐시에 저장
+        self._save_to_cache(cache_key, keyword_weights)
+
+        return keyword_weights
+
     def get_top_keywords(self, n=20, timeframe='today 3-m'):
         """
         상위 N개 인기 키워드 추출

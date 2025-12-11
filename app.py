@@ -240,7 +240,7 @@ def get_weekly_trends():
 @app.route('/api/trends/top-keywords', methods=['GET'])
 def get_top_keywords():
     """
-    상위 인기 키워드 API
+    상위 인기 키워드 API (개별 키워드 실제 검색량 기반)
 
     Query 파라미터:
         n (int): 가져올 키워드 개수 (기본값: 20)
@@ -255,13 +255,8 @@ def get_top_keywords():
         timeframe = request.args.get('timeframe', 'today 3-m')
         category = request.args.get('category', None)
 
-        # 전체 키워드 가중치 가져오기
-        keyword_weights = trends_analyzer.get_keyword_weights(timeframe)
-
-        # 특정 카테고리로 필터링
-        if category and category in PRODUCT_KEYWORDS:
-            category_keywords = PRODUCT_KEYWORDS[category]
-            keyword_weights = {k: v for k, v in keyword_weights.items() if k in category_keywords}
+        # 상세 키워드 가중치 가져오기 (실제 개별 검색량)
+        keyword_weights = trends_analyzer.get_detailed_keyword_weights(timeframe, category)
 
         # 점수 기준으로 정렬하여 상위 N개 추출
         sorted_keywords = sorted(keyword_weights.items(), key=lambda x: x[1], reverse=True)[:n]
