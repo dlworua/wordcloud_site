@@ -265,6 +265,9 @@ def get_top_keywords():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+# Vercel serverless function을 위한 export
+app_handler = app
+
 if __name__ == '__main__':
     # 개발 서버 실행 (포트 5001 사용 - macOS AirPlay가 5000 사용)
     app.run(debug=True, host='0.0.0.0', port=5001)
