@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>보험 키워드 트렌드 분석</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    <style>
+        /* 전역 스타일 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        /* 헤더 */
+        header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            color: #333;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        /* 컨트롤 패널 */
+        .controls {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .control-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 200px;
+            gap: 20px;
+            align-items: end;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            font-size: 0.95em;
+        }
+
+        select {
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            background: white;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .analyze-btn {
+            padding: 14px 32px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 17px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .analyze-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+        }
+
+        .analyze-btn:active {
+            transform: translateY(0);
+        }
+
+        .analyze-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* 카드 스타일 */
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 25px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .card h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.6em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card h2::before {
+            content: '';
+            width: 4px;
+            height: 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 2px;
+        }
+
+        /* 워드클라우드 컨테이너 */
+        .wordcloud-container {
+            text-align: center;
+            min-height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .wordcloud-container img {
+            max-width: 100%;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 로딩 상태 */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #667eea;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            color: #666;
+            font-size: 1.1em;
+            margin-top: 15px;
+        }
+
+        /* 차트 컨테이너 */
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin-top: 20px;
+        }
+
+        /* 그리드 레이아웃 */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 25px;
+        }
+
+        /* 반응형 */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2em;
+            }
+
+            .control-row {
+                grid-template-columns: 1fr;
+            }
+
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* 빈 상태 */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-state-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+        }
+
+        .empty-state-text {
+            font-size: 1.2em;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🔍 보험 키워드 트렌드 분석</h1>
+        <p class="subtitle">Google Trends 기반 실시간 검색 트렌드 분석 대시보드</p>
+    </header>
+
+    <div class="controls">
+        <div class="control-row">
+            <div class="control-group">
+                <label for="timeframe">📅 분석 기간</label>
+                <select id="timeframe">
+                    <option value="now 1-d">최근 1일</option>
+                    <option value="now 7-d">최근 7일</option>
+                    <option value="today 1-m">최근 1개월</option>
+                    <option value="today 3-m" selected>최근 3개월</option>
+                    <option value="today 12-m">최근 12개월</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label for="category">📊 카테고리 필터</label>
+                <select id="category">
+                    <option value="">전체 보험</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat }}">{{ cat }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <button class="analyze-btn" onclick="analyzeAll()">
+                <span id="btnText">분석 시작</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- 워드클라우드 섹션 -->
+    <div class="card">
+        <h2>워드클라우드</h2>
+        <div class="loading" id="wordcloudLoading">
+            <div class="spinner"></div>
+            <p class="loading-text">워드클라우드를 생성하고 있습니다...</p>
+        </div>
+        <div class="wordcloud-container" id="wordcloudResult">
+            <div class="empty-state">
+                <div class="empty-state-icon">📊</div>
+                <div class="empty-state-text">분석 시작 버튼을 눌러 워드클라우드를 생성하세요</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 그리드 레이아웃 -->
+    <div class="grid">
+        <!-- 카테고리별 트렌드 -->
+        <div class="card">
+            <h2>카테고리별 검색 트렌드</h2>
+            <div class="loading" id="categoryLoading">
+                <div class="spinner"></div>
+                <p class="loading-text">데이터를 불러오고 있습니다...</p>
+            </div>
+            <div class="chart-container" id="categoryChartContainer" style="display: none;">
+                <canvas id="categoryChart"></canvas>
+            </div>
+            <div class="empty-state" id="categoryEmpty">
+                <div class="empty-state-icon">📈</div>
+                <div class="empty-state-text">카테고리별 검색량을 분석합니다</div>
+            </div>
+        </div>
+
+        <!-- 인기 키워드 순위 -->
+        <div class="card">
+            <h2>인기 키워드 TOP 20</h2>
+            <div class="loading" id="topLoading">
+                <div class="spinner"></div>
+                <p class="loading-text">데이터를 불러오고 있습니다...</p>
+            </div>
+            <div class="chart-container" id="topChartContainer" style="display: none;">
+                <canvas id="topKeywordsChart"></canvas>
+            </div>
+            <div class="empty-state" id="topEmpty">
+                <div class="empty-state-icon">🏆</div>
+                <div class="empty-state-text">인기 키워드 순위를 분석합니다</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let categoryChart = null;
+        let topKeywordsChart = null;
+
+        // 전체 분석 실행
+        async function analyzeAll() {
+            const btn = document.querySelector('.analyze-btn');
+            const btnText = document.getElementById('btnText');
+
+            btn.disabled = true;
+            btnText.textContent = '분석 중...';
+
+            // 3개 API를 병렬로 호출
+            await Promise.all([
+                loadWordcloud(),
+                loadCategoryTrends(),
+                loadTopKeywords()
+            ]);
+
+            btn.disabled = false;
+            btnText.textContent = '다시 분석';
+        }
+
+        // 워드클라우드 로드
+        async function loadWordcloud() {
+            const timeframe = document.getElementById('timeframe').value;
+            const category = document.getElementById('category').value;
+            const loading = document.getElementById('wordcloudLoading');
+            const result = document.getElementById('wordcloudResult');
+
+            loading.classList.add('active');
+            result.innerHTML = '';
+
+            try {
+                const url = `/api/trends/wordcloud?timeframe=${timeframe}${category ? '&category=' + encodeURIComponent(category) : ''}`;
+                const response = await fetch(url);
+
+                loading.classList.remove('active');
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const imageUrl = URL.createObjectURL(blob);
+                    result.innerHTML = `<img src="${imageUrl}" alt="트렌드 워드클라우드">`;
+                } else {
+                    const errorText = await response.text();
+                    result.innerHTML = `<div class="empty-state"><div class="empty-state-icon">❌</div><div class="empty-state-text" style="color: red;">${errorText}</div></div>`;
+                }
+            } catch (error) {
+                loading.classList.remove('active');
+                result.innerHTML = `<div class="empty-state"><div class="empty-state-icon">❌</div><div class="empty-state-text" style="color: red;">오류: ${error.message}</div></div>`;
+            }
+        }
+
+        // 카테고리별 트렌드 로드
+        async function loadCategoryTrends() {
+            const timeframe = document.getElementById('timeframe').value;
+            const loading = document.getElementById('categoryLoading');
+            const empty = document.getElementById('categoryEmpty');
+            const container = document.getElementById('categoryChartContainer');
+
+            loading.classList.add('active');
+            empty.style.display = 'none';
+            container.style.display = 'none';
+
+            try {
+                const response = await fetch(`/api/trends/categories?timeframe=${timeframe}`);
+                const data = await response.json();
+
+                loading.classList.remove('active');
+
+                if (response.ok) {
+                    container.style.display = 'block';
+                    updateCategoryChart(data);
+                } else {
+                    empty.style.display = 'block';
+                    empty.innerHTML = `<div class="empty-state-icon">❌</div><div class="empty-state-text" style="color: red;">오류: ${data.error}</div>`;
+                }
+            } catch (error) {
+                loading.classList.remove('active');
+                empty.style.display = 'block';
+                empty.innerHTML = `<div class="empty-state-icon">❌</div><div class="empty-state-text" style="color: red;">오류: ${error.message}</div>`;
+            }
+        }
+
+        // 인기 키워드 로드
+        async function loadTopKeywords() {
+            const timeframe = document.getElementById('timeframe').value;
+            const loading = document.getElementById('topLoading');
+            const empty = document.getElementById('topEmpty');
+            const container = document.getElementById('topChartContainer');
+
+            loading.classList.add('active');
+            empty.style.display = 'none';
+            container.style.display = 'none';
+
+            try {
+                const response = await fetch(`/api/trends/top-keywords?n=20&timeframe=${timeframe}`);
+                const data = await response.json();
+
+                loading.classList.remove('active');
+
+                if (response.ok) {
+                    container.style.display = 'block';
+                    updateTopKeywordsChart(data);
+                } else {
+                    empty.style.display = 'block';
+                    empty.innerHTML = `<div class="empty-state-icon">❌</div><div class="empty-state-text" style="color: red;">오류: ${data.error}</div>`;
+                }
+            } catch (error) {
+                loading.classList.remove('active');
+                empty.style.display = 'block';
+                empty.innerHTML = `<div class="empty-state-icon">❌</div><div class="empty-state-text" style="color: red;">오류: ${error.message}</div>`;
+            }
+        }
+
+        // 카테고리 차트 업데이트
+        function updateCategoryChart(data) {
+            const ctx = document.getElementById('categoryChart');
+            const labels = Object.keys(data);
+            const values = Object.values(data);
+
+            if (categoryChart) {
+                categoryChart.destroy();
+            }
+
+            categoryChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '평균 검색량',
+                        data: values,
+                        backgroundColor: 'rgba(102, 126, 234, 0.8)',
+                        borderColor: 'rgba(102, 126, 234, 1)',
+                        borderWidth: 2,
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 인기 키워드 차트 업데이트
+        function updateTopKeywordsChart(data) {
+            const ctx = document.getElementById('topKeywordsChart');
+            const labels = data.map(item => item[0]);
+            const values = data.map(item => item[1]);
+
+            if (topKeywordsChart) {
+                topKeywordsChart.destroy();
+            }
+
+            topKeywordsChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '검색 점수',
+                        data: values,
+                        backgroundColor: 'rgba(118, 75, 162, 0.8)',
+                        borderColor: 'rgba(118, 75, 162, 1)',
+                        borderWidth: 2,
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        },
+                        y: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>

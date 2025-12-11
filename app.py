@@ -25,8 +25,8 @@ trends_analyzer = TrendsAnalyzer()
 
 @app.route('/')
 def index():
-    """메인 페이지 렌더링"""
-    return render_template('index.html')
+    """메인 페이지 - 통합 대시보드"""
+    return render_template('dashboard.html', categories=PRODUCT_CATEGORIES)
 
 @app.route('/generate', methods=['POST'])
 def generate_wordcloud():
@@ -83,10 +83,7 @@ def generate_wordcloud():
     except Exception as e:
         return f"오류가 발생했습니다: {str(e)}", 500
 
-@app.route('/trends')
-def trends_dashboard():
-    """Google Trends 기반 보험 키워드 분석 대시보드"""
-    return render_template('trends.html', categories=PRODUCT_CATEGORIES)
+# /trends 라우트 제거 - 메인 페이지로 통합됨
 
 @app.route('/api/trends/categories', methods=['GET'])
 def get_category_trends():
