@@ -447,8 +447,25 @@
         // 카테고리 차트 업데이트
         function updateCategoryChart(data, selectedCategory) {
             const ctx = document.getElementById('categoryChart');
-            const labels = Object.keys(data);
-            const values = Object.values(data);
+            let labels = Object.keys(data);
+            let values = Object.values(data);
+
+            // 선택된 카테고리가 있으면 맨 위(첫 번째)로 이동
+            if (selectedCategory) {
+                // 데이터를 [label, value] 쌍으로 만들어서 정렬
+                let pairs = labels.map((label, index) => [label, values[index]]);
+
+                // 선택된 카테고리를 찾아서 맨 앞으로 이동
+                const selectedIndex = pairs.findIndex(pair => pair[0] === selectedCategory);
+                if (selectedIndex > 0) {
+                    const selectedPair = pairs.splice(selectedIndex, 1)[0];
+                    pairs.unshift(selectedPair);
+                }
+
+                // 분리된 labels와 values로 다시 변환
+                labels = pairs.map(pair => pair[0]);
+                values = pairs.map(pair => pair[1]);
+            }
 
             if (categoryChart) {
                 categoryChart.destroy();
