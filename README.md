@@ -51,6 +51,9 @@ Google Trends 기반 실시간 보험 키워드 검색 트렌드 분석 및 워�
 
 ## 설치 및 실행
 
+### 0. 링크 이동
+https://wordcloud-site.vercel.app/
+
 ### 1. 저장소 클론
 ```bash
 git clone <repository-url>
