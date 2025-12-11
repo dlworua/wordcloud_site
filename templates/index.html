@@ -158,11 +158,28 @@
             margin: 20px 0;
             color: #999;
         }
+
+        /* 네비게이션 링크 */
+        .nav-link {
+            display: block;
+            text-align: center;
+            margin-bottom: 20px;
+            text-decoration: none;
+            color: #667eea;
+            font-weight: 600;
+            transition: color 0.3s;
+        }
+
+        .nav-link:hover {
+            color: #764ba2;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>워드클라우드 생성기</h1>
+
+        <a href="/trends" class="nav-link">보험 키워드 트렌드 분석 바로가기 →</a>
 
         <form id="wordcloudForm">
             <div class="form-group">
