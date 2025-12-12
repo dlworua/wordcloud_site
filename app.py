@@ -57,6 +57,7 @@ def generate_wordcloud():
         # 한글 폰트 경로 찾기
         font_path = None
         possible_fonts = [
+            os.path.join(os.path.dirname(__file__), 'fonts', 'AppleSDGothicNeo.ttc'),  # 프로젝트 폰트
             '/System/Library/Fonts/AppleSDGothicNeo.ttc',  # macOS
             '/usr/share/fonts/truetype/nanum/NanumGothic.ttf',  # Linux
             'C:/Windows/Fonts/malgun.ttf',  # Windows
@@ -176,6 +177,7 @@ def generate_trends_wordcloud():
         # 한글 폰트 경로 찾기
         font_path = None
         possible_fonts = [
+            os.path.join(os.path.dirname(__file__), 'fonts', 'AppleSDGothicNeo.ttc'),  # 프로젝트 폰트
             '/System/Library/Fonts/AppleSDGothicNeo.ttc',  # macOS
             '/usr/share/fonts/truetype/nanum/NanumGothic.ttf',  # Linux
             'C:/Windows/Fonts/malgun.ttf',  # Windows
