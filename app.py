@@ -54,16 +54,31 @@ def generate_wordcloud():
         if not text or text.strip() == '':
             return "텍스트를 입력하거나 파일을 업로드해주세요.", 400
 
+        # 한글 폰트 경로 찾기
+        font_path = None
+        possible_fonts = [
+            '/System/Library/Fonts/AppleSDGothicNeo.ttc',  # macOS
+            '/usr/share/fonts/truetype/nanum/NanumGothic.ttf',  # Linux
+            'C:/Windows/Fonts/malgun.ttf',  # Windows
+        ]
+        for font in possible_fonts:
+            if os.path.exists(font):
+                font_path = font
+                break
+
         # 워드클라우드 객체 생성 및 설정
-        wordcloud = WordCloud(
-            width=800,              # 이미지 너비
-            height=400,             # 이미지 높이
-            background_color='white',  # 배경색
-            font_path='/System/Library/Fonts/AppleSDGothicNeo.ttc',  # 한글 폰트 경로
-            colormap='viridis',     # 색상 테마
-            relative_scaling=0.5,   # 단어 빈도에 따른 크기 조절
-            min_font_size=10        # 최소 폰트 크기
-        ).generate(text)
+        wordcloud_params = {
+            'width': 800,
+            'height': 400,
+            'background_color': 'white',
+            'colormap': 'viridis',
+            'relative_scaling': 0.5,
+            'min_font_size': 10
+        }
+        if font_path:
+            wordcloud_params['font_path'] = font_path
+
+        wordcloud = WordCloud(**wordcloud_params).generate(text)
 
         # matplotlib을 이용한 이미지 생성
         plt.figure(figsize=(10, 5))
@@ -158,17 +173,32 @@ def generate_trends_wordcloud():
         if not keyword_weights:
             return "검색 트렌드 데이터를 가져올 수 없습니다.", 400
 
+        # 한글 폰트 경로 찾기
+        font_path = None
+        possible_fonts = [
+            '/System/Library/Fonts/AppleSDGothicNeo.ttc',  # macOS
+            '/usr/share/fonts/truetype/nanum/NanumGothic.ttf',  # Linux
+            'C:/Windows/Fonts/malgun.ttf',  # Windows
+        ]
+        for font in possible_fonts:
+            if os.path.exists(font):
+                font_path = font
+                break
+
         # 워드클라우드 생성 (빈도수 기반)
-        wordcloud = WordCloud(
-            width=1200,             # 이미지 너비
-            height=600,             # 이미지 높이
-            background_color='white',  # 배경색
-            font_path='/System/Library/Fonts/AppleSDGothicNeo.ttc',  # 한글 폰트
-            colormap='viridis',     # 색상 테마
-            relative_scaling=0.5,   # 빈도에 따른 크기 조절
-            min_font_size=10,       # 최소 폰트 크기
-            max_words=100           # 최대 단어 수
-        ).generate_from_frequencies(keyword_weights)
+        wordcloud_params = {
+            'width': 1200,
+            'height': 600,
+            'background_color': 'white',
+            'colormap': 'viridis',
+            'relative_scaling': 0.5,
+            'min_font_size': 10,
+            'max_words': 100
+        }
+        if font_path:
+            wordcloud_params['font_path'] = font_path
+
+        wordcloud = WordCloud(**wordcloud_params).generate_from_frequencies(keyword_weights)
 
         # 이미지 생성
         plt.figure(figsize=(12, 6))
